@@ -1,0 +1,10 @@
+name: obesity
+dependencies:
+- python=3
+- numpy
+- pandas>=0.18
+- seaborn
+- pip:
+    - dotenv
+    - watermark
+    - git+https://github.com/pymc-devs/pymc3.git#package=pymc3
