@@ -1,6 +1,9 @@
 name: obesity
 dependencies:
 - python=3
+- ipykernel
+- ipywidgets
+- notebook
 - numpy
 - pandas>=0.18
 - seaborn
