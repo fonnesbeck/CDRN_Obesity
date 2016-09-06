@@ -16,3 +16,4 @@ pip-delete-this-directory.txt
 /data/
 
 .env
+.DS_Store
