@@ -30,4 +30,8 @@ p_{G_J}(\mathbf{y}_i | \theta_J), \text{if } G_{j[i]} = G_J
 
 where $\theta_j$ is a vector of parameters corresponding to model $G_j$.
 
+To allow for very flexible modeling of the BMI measurement time series, we will use Gaussian processes (GP), a Bayesian non-parametric regression approach. This avoids being contstrained to standard parametric model forms, and obviates the need to perform model selection among candidate forms. Gaussian processes can be made to model complex non-linear time series, by choosing the appropriate covariance function to describe the variation among observations. A GP describes a distribution over functions, which can be neatly adopted to describe observed BMI trajectories as realizations from a typical underlying pattern in BMI change over time.
+
+$$f(t) \sim GP(m(t), k(t, t^{\prime}))$$
+
 ## Limitations and Issues
