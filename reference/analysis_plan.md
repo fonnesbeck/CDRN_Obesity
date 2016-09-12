@@ -32,6 +32,16 @@ where $\theta_j$ is a vector of parameters corresponding to model $G_j$.
 
 To allow for very flexible modeling of the BMI measurement time series, we will use Gaussian processes (GP), a Bayesian non-parametric regression approach. This avoids being contstrained to standard parametric model forms, and obviates the need to perform model selection among candidate forms. Gaussian processes can be made to model complex non-linear time series, by choosing the appropriate covariance function to describe the variation among observations. A GP describes a distribution over functions, which can be neatly adopted to describe observed BMI trajectories as realizations from a typical underlying pattern in BMI change over time.
 
+A Gaussian process is fully specified by two functions, a mean function $m(t)$ and a covariance function $k(t, t^{\prime})$, 
+
 $$f(t) \sim GP(m(t), k(t, t^{\prime}))$$
+
+This essentially represents an infinitely-dimensional multivariate normal distribution. Because of the ease with which Gaussian distributions can be conditioned and marginalized, values of the GP that we have not observed values for (or are not otherwise interested in) can essentially be ignored. This allows us to use Gaussian processes for regression. 
+
+For example, we can think of observed time series as random draw from the underlying process, as in the figure below.
+
+![Three realizations (solid color lines) from a Gaussian process.](http://d.pr/i/szo2/5AFpuv5i+)
+
+
 
 ## Limitations and Issues
