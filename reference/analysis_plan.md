@@ -1,6 +1,9 @@
 # Analysis Plan: Mid-south CDRN Obesity Project
 
-The overarching aim of the project is to identify patient variables that are associated with realized patterns of BMI change over time. Our analysis seeks to achieve this aim by decomposing the problem into two distinct sub-objectives. 
+**Prepared by: Christopher Fonnesbeck**  
+**Draft: 2016-09-13**
+
+A key aim of the project is to identify patient variables that are associated with realized patterns of BMI change over time. Our analysis seeks to achieve this aim by decomposing the problem into two distinct sub-objectives. 
 
 1. Identifying classes of BMI trajectories that represent general patterns of BMI change
 2. Identify patient attributes that predict the class of BMI trajectory that is observed
@@ -13,7 +16,7 @@ Classifying BMI time series into relatively homogeneous subsets suggests the use
 
 By clustering, we wish to capture the predictable variation across such time series, implying that each group can be characterized by a distinct data-generating mechanism. A particular observed time series is considered to be a realization of one of these groups, whereby all time series within the same group can be characterized by the same data generating mechanism. The statistical problem is then concerned with how observations are assigned to the suite of groups. Any residual variation is then assumed to be due to unmeasured factors that may influence how realizations may quantitatively differ from other observations within that class of mechanism. 
 
-With a mixture model, group assignment is probabilistic, rather than deterministic, where the probabilities of group membership is determined by the relative fit to the data under each potential generative model. We will be using Bayesian methods to build the mixture models, which allows for the use of Markov chain Monte Carlo (MCMC) methods to iteratively and stochastically assign trajectories to clusters, the parameters of which can be fit simultaneously within the same modeling framework. 
+With a mixture model, group assignment is probabilistic, rather than deterministic, where the probabilities of group membership is determined by the relative fit to the data under each potential generative model. We will be using Bayesian methods to build the mixture models, which allows for the use of Markov chain Monte Carlo (MCMC, Geyer 2011) methods to iteratively and stochastically assign trajectories to clusters, the parameters of which can be fit simultaneously within the same modeling framework. 
 
 We will consider longitudinal measurements of BMI as observations $y_{it}$, indexed by patient $i$ and measurement time $t$. Hence, a particular trajectory can be written as:
 
@@ -30,7 +33,9 @@ p_{G_J}(\mathbf{y}_i | \theta_J), \text{if } G_{j[i]} = G_J
 
 where $\theta_j$ is a vector of parameters corresponding to model $G_j$.
 
-To allow for very flexible modeling of the BMI measurement time series, we will use Gaussian processes (GP), a Bayesian non-parametric regression approach. This avoids being contstrained to standard parametric model forms, and obviates the need to perform model selection among candidate forms. Gaussian processes can be made to model complex non-linear time series, by choosing the appropriate covariance function to describe the variation among observations. A GP describes a distribution over functions, which can be neatly adopted to describe observed BMI trajectories as realizations from a typical underlying pattern in BMI change over time.
+### Gaussian processes for time series modeling
+
+To allow for very flexible modeling of the BMI measurement time series, we will use Gaussian processes (GP, Rasmussen and Williams 2005), a Bayesian non-parametric regression approach. This avoids being constrained to standard parametric model forms, and obviates the need to perform model selection among candidate forms. Gaussian processes can be made to model complex non-linear time series, by choosing the appropriate covariance function to describe the variation among observations. A GP describes a distribution over functions, which can be neatly adopted to describe observed BMI trajectories as realizations from a typical underlying pattern in BMI change over time.
 
 A Gaussian process is fully specified by two functions, a mean function $m(t)$ and a covariance function $k(t, t^{\prime})$, 
 
@@ -42,6 +47,46 @@ For example, we can think of observed time series as random draw from the underl
 
 ![Three realizations (solid color lines) from a Gaussian process.](http://d.pr/i/szo2/5AFpuv5i+)
 
+We propose using Gaussian processes in a generative model to directly model the underlying BMI dynamics, accounting for both individual variation and measurement noise. If we consider a single observed trajectory as a realization from a particular class of BMI profiles, we can model the profile $g_j$ as a member of a population of profiles that are modeled by a GP:
 
+$$g_j(t) \sim GP(\mathbf{0}, k_g(t, t^\prime)) $$
 
-## Limitations and Issues
+Thus, $g_j$ is the expected trajectory of a particular BMI profile class, from which observations are thought to be drawn:
+
+$$y_i(t) \sim GP(g_{j[i]}(t), k_f(t, t^\prime)) $$
+
+where $g_{j[i]}(t)$ denotes underlying process $g_j$, to which individual $i$ belongs.
+
+### Time series clustering
+
+Since our goal is the identification of natural clusters of BMI profiles, we need a method for (1) determining the number of clusters in the population and (2) assigning each observed trajectory to one cluster of the set. Beyond this, we wish to determine how cluster membership changes with a set of predictors $X_i$.  
+
+Consistent with our approach for modeling individual time series, we will take a probabilistic approach to creating clusters and assigning individual observations to them. Specifically, we will assign a Dirichlet process (Gelman et al. 2013) as the prior distribution of cluster membership. 
+
+$$P \sim DP(\alpha P_0)$$
+
+Just as the Gaussian process is a distribution over functions, a Dirichlet process is a distribution over distributions. It is centered upon the baseline probability measure $P_0$, with $\alpha$ specifying the certainty in this baseline (*i.e.* inverse variance). 
+
+The advantages of using a Dirichlet process to describe the distribution of observations among clusters are (1) there is no parametric constraint to the form of the distribution and (2) the number of clusters need not be specified *a priori*. This last feature in particular is important here because we do not necessarily know the appropriate number of natural classes of BMI trajectories. In the context of a prior on the number of clusters, the process is non-parametric (grows approximately as $\mathcal{O}(\log(n)$)).
+
+Using the DP as a prior on the number of groups, along with Gaussian processes to model the expected BMI trajectory for each group allows us to perform times series modeling and clustering simultaneously, within the same model framework. 
+
+### Covariate model
+
+The second component of the analysis is to identify patient attributes that are predictive of the class of BMI trajectory to which a particular patient belongs. We will use unordered categorical (multinomial) regression to relate potential predictors to the probability of belonging to each latent class (Gelman et al. 2013). Generally, such models extend binomial or Poisson models to polychotomous data. 
+
+We will initially consider the binomial case: if we consider $k$ potential BMI trajectory classes, and latent vector $z_i = [z_{i1}, z_{i2}, \ldots, z_{ik}]$ that is the class assignment for individual $i$, where each $z_{ij} = 0$ except for the value $j$ that corresponds to the assigned class, where the value is one. This describes a multinomial (or categorical, since here $n=1$) likelihood:
+
+$$z_i \sim \text{Multinomial}(1, \alpha_{i1}, \alpha_{i2}, \ldots, \alpha_{ik})$$
+
+where $\alpha_{ij}$ is the probability of the $j^{th}$ class and $\sum_j \alpha_{ij} = 1$. This model can be parameterized in terms of the natural logarithm of the ratio of the probability of a particular class to the probability of a baseline class (arbitrarily chosen):
+
+$$\log\left[\frac{\alpha_{ij}}{\alpha_{i1}}\right] = X_i \beta_j$$
+
+where $\beta_j$ is a vector of covariates for the $j^{th}$ BMI trajectory class, indicating the result of a unit change in $X$ on the probability of observing outcomes in class $j$ relative to class 1.
+
+## References
+
+1.	Geyer C. Introduction to Markov Chain Monte Carlo. In: Handbook of Markov Chain Monte Carlo. CRC Press; 2011:1-46.
+1.	Rasmussen CE, Williams CKI. Gaussian Processes for Machine Learning (Adaptive Computation and Machine Learning Series). The MIT Press; 2005.
+1.	Gelman A, Carlin JB, Stern HS, Dunson DB, Vehtari A, Rubin DB. Bayesian Data Analysis, Third Edition. CRC Press; 2013.
